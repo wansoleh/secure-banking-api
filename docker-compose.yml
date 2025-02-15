@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:latest
+    container_name: banking-db
+    restart: always
+    environment:
+      POSTGRES_USER: bankadmin
+      POSTGRES_PASSWORD: G7!s#v1d@Z0X%p2aK3
+      POSTGRES_DB: banking_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+
+  api:
+    build: .
+    container_name: banking-api
+    restart: always
+    depends_on:
+      - db
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+
+volumes:
+  db_data:
