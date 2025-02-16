@@ -1,22 +1,13 @@
-# Menggunakan base image Go
-FROM golang:1.19
+FROM golang:1.21-alpine AS builder
 
-# Set working directory dalam container
 WORKDIR /app
-
-# Copy go.mod dan go.sum untuk dependency management
-COPY go.mod ./
-COPY go.sum ./
-RUN go mod tidy
-
-# Copy semua source code ke dalam container
+COPY go.mod go.sum ./
+RUN go mod download
 COPY . .
+RUN go build -o banking-api main.go
 
-# Build aplikasi
-RUN go build -o banking-api
-
-# Expose port yang digunakan
+FROM alpine:latest
+WORKDIR /root/
+COPY --from=builder /app/banking-api .
 EXPOSE 8080
-
-# Jalankan aplikasi
-CMD ["/app/banking-api"]
+CMD ["./banking-api"]
