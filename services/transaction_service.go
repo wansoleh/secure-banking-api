@@ -13,23 +13,23 @@ func Deposit(accountNumber string, amount int) (int, error) {
 
 	if err := tx.Where("account_number = ?", accountNumber).First(&user).Error; err != nil {
 		tx.Rollback()
-		return 0, errors.New("Nomor rekening tidak ditemukan")
+		return 0, errors.New("nomor rekening tidak ditemukan") // ✅ Huruf kecil
 	}
 
 	user.Balance += amount
 	if err := tx.Save(&user).Error; err != nil {
 		tx.Rollback()
-		return 0, err
+		return 0, errors.New("gagal menyimpan saldo pengguna") // ✅ Huruf kecil
 	}
 
 	transaction := models.Transaction{
-		AccountNumber:  accountNumber,
-		TransactionType: "deposit",
-		Amount:         amount,
+		AccountNumber: accountNumber,
+		Type:          "deposit",
+		Amount:        amount,
 	}
 	if err := tx.Create(&transaction).Error; err != nil {
 		tx.Rollback()
-		return 0, err
+		return 0, errors.New("gagal menyimpan transaksi") // ✅ Huruf kecil
 	}
 
 	tx.Commit()

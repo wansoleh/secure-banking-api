@@ -7,31 +7,40 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Logger digunakan untuk mencatat aktivitas aplikasi
-var Logger *logrus.Logger
+// Log digunakan untuk mencatat aktivitas aplikasi
+var Log *logrus.Logger
 
 // InitLogger mengatur konfigurasi log
 func InitLogger() {
-	Logger = logrus.New()
-	Logger.SetFormatter(&logrus.JSONFormatter{
+	Log = logrus.New()
+	Log.SetFormatter(&logrus.JSONFormatter{
 		TimestampFormat: time.RFC3339,
 	})
 
-	file, err := os.OpenFile("logs/banking.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	if err == nil {
-		Logger.SetOutput(file)
-	} else {
-		Logger.SetOutput(os.Stdout)
+	// Pastikan direktori logs/ ada
+	if _, err := os.Stat("logs"); os.IsNotExist(err) {
+		_ = os.Mkdir("logs", 0755) // Buat folder jika belum ada
 	}
 
-	switch Config.LogLevel {
+	// Buka file log
+	file, err := os.OpenFile("logs/banking.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err == nil {
+		Log.SetOutput(file)
+	} else {
+		Log.SetOutput(os.Stdout)
+		Log.Warn("Gagal membuka file log, menggunakan stdout")
+	}
+
+	// Ambil level log dari environment variable
+	logLevel := os.Getenv("LOG_LEVEL")
+	switch logLevel {
 	case "debug":
-		Logger.SetLevel(logrus.DebugLevel)
+		Log.SetLevel(logrus.DebugLevel)
 	case "warn":
-		Logger.SetLevel(logrus.WarnLevel)
+		Log.SetLevel(logrus.WarnLevel)
 	case "error":
-		Logger.SetLevel(logrus.ErrorLevel)
+		Log.SetLevel(logrus.ErrorLevel)
 	default:
-		Logger.SetLevel(logrus.InfoLevel)
+		Log.SetLevel(logrus.InfoLevel)
 	}
 }

@@ -1,14 +1,16 @@
 package handlers
 
 import (
-	"math/rand"
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/sirupsen/logrus"
 	"secure-banking-api/config"
 	"secure-banking-api/models"
+	"secure-banking-api/services" // Import the services package
 )
 
+// RegisterUser handles user registration
 func RegisterUser(c *fiber.Ctx) error {
 	var user models.User
 	if err := c.BodyParser(&user); err != nil {
@@ -16,35 +18,31 @@ func RegisterUser(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"remark": "Invalid request"})
 	}
 
-	// Cek apakah NIK atau NoHP sudah terdaftar
+	// Check if NIK or PhoneNumber already exists
 	var existingUser models.User
-	if err := config.DB.Where("nik = ? OR no_hp = ?", user.NIK, user.NoHP).First(&existingUser).Error; err == nil {
+	if err := config.DBInstance.Where("nik = ? OR phone_number = ?", user.NIK, user.PhoneNumber).First(&existingUser).Error; err == nil {
 		config.Log.WithFields(logrus.Fields{
-			"nik":   user.NIK,
-			"no_hp": user.NoHP,
-		}).Warning("User registration failed: Duplicate NIK or No HP")
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"remark": "NIK atau No HP sudah digunakan"})
+			"nik":         user.NIK,
+			"phoneNumber": user.PhoneNumber,
+		}).Warning("User registration failed: Duplicate NIK or PhoneNumber")
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"remark": "NIK atau Nomor HP sudah digunakan"})
 	}
 
-	// Generate nomor rekening unik
-	user.NoRekening = generateNoRekening()
-	user.Saldo = 0
+	// Generate unique account number
+	user.AccountNumber = services.GenerateAccountNumber()
+	user.Balance = 0
 
-	if err := config.DB.Create(&user).Error; err != nil {
+	if err := config.DBInstance.Create(&user).Error; err != nil {
 		config.Log.WithError(err).Error("Failed to register new user")
 		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"remark": "Gagal mendaftarkan pengguna"})
 	}
 
 	config.Log.WithFields(logrus.Fields{
-		"nama":        user.Nama,
-		"nik":         user.NIK,
-		"no_hp":       user.NoHP,
-		"no_rekening": user.NoRekening,
+		"fullName":      user.FullName,
+		"nik":           user.NIK,
+		"phoneNumber":   user.PhoneNumber,
+		"accountNumber": user.AccountNumber,
 	}).Info("New user registered successfully")
 
-	return c.JSON(fiber.Map{"no_rekening": user.NoRekening})
-}
-
-func generateNoRekening() string {
-	return "112233" + string(rand.Intn(99999-10000)+10000)
+	return c.JSON(fiber.Map{"account_number": user.AccountNumber})
 }

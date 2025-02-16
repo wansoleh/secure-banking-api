@@ -6,17 +6,18 @@ import (
 	"secure-banking-api/middleware"
 )
 
+// SetupRoutes mengatur rute API
 func SetupRoutes(app *fiber.App) {
 	api := app.Group("/api")
 
-	userRoutes := api.Group("/users")
-	userRoutes.Post("/register", handlers.RegisterUserHandler)
-	userRoutes.Get("/:account_number", handlers.GetUserHandler)
-	userRoutes.Get("/:account_number/balance", handlers.GetBalanceHandler)
+	// Rute pengguna (nasabah)
+	userRoutes := api.Group("/nasabah")
+	userRoutes.Post("/daftar", handlers.RegisterUserHandler)  // Registrasi nasabah baru
+	userRoutes.Get("/saldo/:no_rekening", handlers.GetBalanceHandler) // Cek saldo
 
-	transactionRoutes := api.Group("/transactions")
+	// Rute transaksi
+	transactionRoutes := api.Group("/transaksi")
 	transactionRoutes.Use(middleware.JWTMiddleware)
-	transactionRoutes.Post("/deposit", handlers.DepositHandler)
-	transactionRoutes.Post("/withdraw", handlers.WithdrawHandler)
-	transactionRoutes.Get("/:account_number", handlers.GetTransactionsHandler)
+	transactionRoutes.Post("/tabung", handlers.DepositHandler)   // Menabung
+	transactionRoutes.Post("/tarik", handlers.WithdrawHandler)   // Menarik dana
 }
